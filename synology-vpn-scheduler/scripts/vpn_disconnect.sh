@@ -13,16 +13,16 @@ if [ -z "$CONF_ID" ]; then
     exit 1
 fi
 
-# Disconnect VPN
-/usr/syno/bin/synovpnc kill_client --id="$CONF_ID"
+# Disconnect VPN (requires root)
+synovpnc kill_client --id="$CONF_ID"
 
 # Double disconnect to prevent auto-reconnect
 sleep 2
-/usr/syno/bin/synovpnc kill_client --id="$CONF_ID"
+synovpnc kill_client --id="$CONF_ID"
 
 # Check disconnection status
 sleep 5
-if /usr/syno/bin/synovpnc status | grep -q "disconnected"; then
+if synovpnc status | grep -q "disconnected"; then
     echo "$(date): VPN disconnected successfully (conf_id=$CONF_ID)" >> "$LOG_FILE"
 else
     echo "$(date): VPN disconnection failed (conf_id=$CONF_ID)" >> "$LOG_FILE"
