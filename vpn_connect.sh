@@ -9,7 +9,7 @@ if [ -z "$CONF_ID" ]; then
     exit 1
 fi
 
-# Connect to the VPN
+# Connect to the VPN test
 /usr/syno/bin/synovpnc connect --id="$CONF_ID"
 
 # Optional: Log the result
