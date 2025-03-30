@@ -23,22 +23,32 @@ else
 fi
 
 # Log status before disconnect
-echo "$(date): VPN status before disconnect: $(synovpnc status)" >> "$LOG_FILE"
+STATUS_BEFORE=$(/usr/syno/bin/synovpnc get_conn)
+echo "$(date): VPN status before disconnect: $STATUS_BEFORE" >> "$LOG_FILE"
 
 # Disconnect VPN (generic, no --id needed)
-synovpnc kill_client
-
-# Double disconnect to prevent auto-reconnect
-sleep 2
-synovpnc kill_client
+if echo "$STATUS_BEFORE" | grep -q "connected"; then
+    /usr/syno/bin/synovpnc kill_client
+    # Double disconnect to prevent auto-reconnect
+    sleep 2
+    /usr/syno/bin/synovpnc kill_client
+else
+    echo "$(date): VPN not connected before attempt; proceeding anyway" >> "$LOG_FILE"
+    /usr/syno/bin/synovpnc kill_client
+    sleep 2
+    /usr/syno/bin/synovpnc kill_client
+fi
 
 # Check disconnection status
 sleep 5
-STATUS=$(synovpnc status)
-echo "$(date): VPN status after disconnect: $STATUS" >> "$LOG_FILE"
+STATUS_AFTER=$(/usr/syno/bin/synovpnc get_conn)
+echo "$(date): VPN status after disconnect: $STATUS_AFTER" >> "$LOG_FILE"
 
-if echo "$STATUS" | grep -q "disconnected\|not running\|stopped"; then
+# Check if disconnected or already off
+if echo "$STATUS_AFTER" | grep -q "disconnected\|not connected\|no connection\|No VPN connection"; then
     echo "$(date): VPN disconnected successfully (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
+elif echo "$STATUS_BEFORE" | grep -q "disconnected\|not connected\|no connection\|No VPN connection"; then
+    echo "$(date): VPN was already disconnected; treating as success (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
 else
     echo "$(date): VPN disconnection failed (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
     exit 1
