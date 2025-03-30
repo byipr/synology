@@ -22,6 +22,9 @@ else
     echo "$(date): Found conf_id: $CONF_ID" >> "$LOG_FILE"
 fi
 
+# Log status before disconnect
+echo "$(date): VPN status before disconnect: $(synovpnc status)" >> "$LOG_FILE"
+
 # Disconnect VPN (generic, no --id needed)
 synovpnc kill_client
 
@@ -31,7 +34,10 @@ synovpnc kill_client
 
 # Check disconnection status
 sleep 5
-if synovpnc status | grep -q "disconnected"; then
+STATUS=$(synovpnc status)
+echo "$(date): VPN status after disconnect: $STATUS" >> "$LOG_FILE"
+
+if echo "$STATUS" | grep -q "disconnected\|not running\|stopped"; then
     echo "$(date): VPN disconnected successfully (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
 else
     echo "$(date): VPN disconnection failed (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
