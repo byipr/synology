@@ -1,0 +1,2 @@
+cat /usr/syno/etc/synovpnclient/vpnc_last_connect | grep conf_id
+cd /volume1/scripts/
