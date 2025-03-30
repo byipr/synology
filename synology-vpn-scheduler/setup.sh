@@ -28,8 +28,20 @@ else
     SCRIPT_DIR="$DEST_DIR/synology-vpn-scheduler"
 fi
 
+# Extract conf_id with sudo
+CONF_ID=$(sudo grep "conf_id" /usr/syno/etc/synovpnclient/vpnc_last_connect | cut -d'=' -f2)
+if [ -z "$CONF_ID" ]; then
+    echo "Error: Could not retrieve conf_id. Please connect the VPN manually first via DSM GUI."
+    exit 1
+fi
+
+# Populate conf_id into vpn_connect.sh and vpn_disconnect.sh using sed
+sudo sed -i "s/<CONF_ID>/$CONF_ID/g" "$SCRIPT_DIR/scripts/vpn_connect.sh"
+sudo sed -i "s/<CONF_ID>/$CONF_ID/g" "$SCRIPT_DIR/scripts/vpn_disconnect.sh"
+
 # Make scripts executable
 chmod +x "$SCRIPT_DIR/scripts/vpn_connect.sh"
 chmod +x "$SCRIPT_DIR/scripts/vpn_disconnect.sh"
 
-echo "Setup complete. Configure Task Scheduler with $SCRIPT_DIR/scripts/vpn_connect.sh and $SCRIPT_DIR/scripts/vpn_disconnect.sh"
+echo "Setup complete. Configured with conf_id=$CONF_ID"
+echo "Configure Task Scheduler with $SCRIPT_DIR/scripts/vpn_connect.sh and $SCRIPT_DIR/scripts/vpn_disconnect.sh"
