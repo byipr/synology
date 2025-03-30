@@ -4,27 +4,36 @@
 SCRIPT_DIR="/volume1/scripts/synology/synology-vpn-scheduler/scripts"
 LOG_FILE="/volume1/scripts/synology/synology-vpn-scheduler/vpn_log.txt"
 
-# Get conf_id from vpnc_last_connect
-CONF_ID=$(grep "conf_id" /usr/syno/etc/synovpnclient/vpnc_last_connect | cut -d'=' -f2)
+# Log initial state
+echo "$(date): Starting VPN disconnect script" >> "$LOG_FILE"
 
-# Check if conf_id is empty
-if [ -z "$CONF_ID" ]; then
-    echo "$(date): Error: Could not retrieve conf_id from vpnc_last_connect" >> "$LOG_FILE"
-    exit 1
+# Check if vpnc_last_connect exists and log its contents
+if [ ! -f /usr/syno/etc/synovpnclient/vpnc_last_connect ]; then
+    echo "$(date): Warning: vpnc_last_connect file not found" >> "$LOG_FILE"
+else
+    echo "$(date): vpnc_last_connect contents: $(cat /usr/syno/etc/synovpnclient/vpnc_last_connect)" >> "$LOG_FILE"
 fi
 
-# Disconnect VPN (requires root)
-synovpnc kill_client --id="$CONF_ID"
+# Get conf_id from vpnc_last_connect (optional, for logging)
+CONF_ID=$(grep "conf_id" /usr/syno/etc/synovpnclient/vpnc_last_connect | cut -d'=' -f2)
+if [ -z "$CONF_ID" ]; then
+    echo "$(date): No conf_id found; proceeding with generic disconnect" >> "$LOG_FILE"
+else
+    echo "$(date): Found conf_id: $CONF_ID" >> "$LOG_FILE"
+fi
+
+# Disconnect VPN (generic, no --id needed)
+synovpnc kill_client
 
 # Double disconnect to prevent auto-reconnect
 sleep 2
-synovpnc kill_client --id="$CONF_ID"
+synovpnc kill_client
 
 # Check disconnection status
 sleep 5
 if synovpnc status | grep -q "disconnected"; then
-    echo "$(date): VPN disconnected successfully (conf_id=$CONF_ID)" >> "$LOG_FILE"
+    echo "$(date): VPN disconnected successfully (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
 else
-    echo "$(date): VPN disconnection failed (conf_id=$CONF_ID)" >> "$LOG_FILE"
+    echo "$(date): VPN disconnection failed (conf_id=${CONF_ID:-unknown})" >> "$LOG_FILE"
     exit 1
 fi
